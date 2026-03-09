@@ -30,6 +30,13 @@ if [ -z "$NEW_VERSION" ]; then
   exit 1
 fi
 
+# Prompt for title
+read -p "  Title: " RELEASE_TITLE
+if [ -z "$RELEASE_TITLE" ]; then
+  echo "Error: Title cannot be empty."
+  exit 1
+fi
+
 # Prompt for changelog (multi-line, empty line to finish)
 echo "  Changelog (one change per line, empty line to finish):"
 CHANGES_FILE=$(mktemp)
@@ -58,6 +65,7 @@ print('\n'.join('- ' + l for l in lines))
 
 echo ""
 echo "  Version:   $NEW_VERSION"
+echo "  Title:     $RELEASE_TITLE"
 echo "  Changelog:"
 echo "$CHANGELOG_DISPLAY" | sed 's/^/    /'
 echo "  Build ID:  $BUILD_ID"
@@ -86,7 +94,7 @@ echo "Publishing changelog..."
 CHANGELOG_POST=$(python3 -c "
 import json
 lines = open('$CHANGES_FILE').read().strip().splitlines()
-print(json.dumps({'game': 'ht-ce', 'version': '$NEW_VERSION', 'title': '$NEW_VERSION', 'changes': lines}))
+print(json.dumps({'game': 'ht-ce', 'version': '$NEW_VERSION', 'title': '$RELEASE_TITLE', 'changes': lines}))
 ")
 curl -s -X POST https://itwn.tech/api/changelog \
   -H "Content-Type: application/json" \
