@@ -262,6 +262,7 @@ function advanceDay(iso: string): string {
 interface DashboardProps {
   initialState: GameState;
   onQuit: () => void;
+  onGameOver: (finalState: GameState) => void;
 }
 
 const DEFAULT_RESEARCH = {
@@ -328,7 +329,9 @@ function SalesGraph({ history }: { history: number[] }) {
   );
 }
 
-export default function Dashboard({ initialState, onQuit }: DashboardProps) {
+const GAME_END_YEAR = 2011;
+
+export default function Dashboard({ initialState, onQuit, onGameOver }: DashboardProps) {
   const [gameState, setGameState] = useState<GameState>(() => migrateState(initialState));
   const [speed, setSpeed] = useState<Speed>(0);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -345,6 +348,7 @@ export default function Dashboard({ initialState, onQuit }: DashboardProps) {
   const pendingReviewRef = useRef<CPUProduct | null>(null);
   const pendingCompetitorReviewRef = useRef<{ product: CompetitorProduct; companyLogoSvg: string } | null>(null);
   const pendingNewsRef = useRef<string[]>([]);
+  const pendingGameOverRef = useRef(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const completedMilestonesRef = useRef<Set<string>>(new Set(MILESTONES.filter(m => m.check(initialState)).map(m => m.id)));
 
@@ -681,22 +685,19 @@ export default function Dashboard({ initialState, onQuit }: DashboardProps) {
           })
           .filter(p => p.salesPower > 3); // Remove very old products
 
-        // Update company valuations
+        // Accumulate daily competitor revenue and update valuations
+        const revenues: Record<string, number> = { ...(compState.companyRevenues || {}) };
         const valuations: Record<string, number> = {};
         for (const compId of compState.knownCompanies) {
           const compProducts = compState.activeProducts.filter(p => p.companyId === compId);
-          const totalReleased = compState.releasedCPUIds.filter(id => {
-            const cpu = COMPETITOR_CPUS.find(c => c.id === id);
-            return cpu?.companyId === compId;
-          }).length;
-          // Valuation: brand value + active market strength + per-product value
-          const activePower = compProducts.reduce((s, p) => s + p.salesPower, 0);
-          valuations[compId] = Math.round(
-            totalReleased * 100000
-            + compProducts.length * 150000
-            + activePower * 2000
-          );
+          // Estimate daily revenue from salesPower * price
+          for (const cp of compProducts) {
+            const dailySales = Math.floor(cp.salesPower * 0.3);
+            revenues[compId] = (revenues[compId] || 0) + dailySales * cp.price;
+          }
+          valuations[compId] = Math.round(revenues[compId] || 0);
         }
+        compState.companyRevenues = revenues;
         compState.companyValuations = valuations;
 
         next.competitorState = compState;
@@ -736,6 +737,11 @@ export default function Dashboard({ initialState, onQuit }: DashboardProps) {
       }
       next.finance = fin;
 
+      // Check for game end
+      if (nextDate.getFullYear() >= GAME_END_YEAR && nextDate.getMonth() === 0 && nextDate.getDate() === 1) {
+        pendingGameOverRef.current = true;
+      }
+
       return next;
     });
   }, []);
@@ -770,6 +776,17 @@ export default function Dashboard({ initialState, onQuit }: DashboardProps) {
       speedBeforeReview.current = speed;
       setSpeed(0);
       setCompetitorReview(compReview);
+    }
+  });
+
+  // Check for game over
+  useEffect(() => {
+    if (pendingGameOverRef.current) {
+      pendingGameOverRef.current = false;
+      setSpeed(0);
+      // Save final state then trigger game over
+      saveState(AUTOSAVE_KEY, gameState);
+      onGameOver(gameState);
     }
   });
 

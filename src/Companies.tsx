@@ -28,14 +28,8 @@ export default function Companies({ gameState, onClose }: CompaniesProps) {
   const cs = gameState.competitorState;
   const companies: CompanyEntry[] = [];
 
-  // Player company - same scale as competitors
-  const sellingProducts = gameState.products.filter(p => p.status === 'selling');
-  const allReleased = gameState.products.filter(p => p.status !== 'designing').length;
-  const playerValuation =
-    allReleased * 100000
-    + sellingProducts.length * 150000
-    + gameState.products.reduce((s, p) => s + p.totalRevenue * 0.3, 0)
-    + gameState.balance * 0.2;
+  // Player company valuation = total revenue
+  const playerValuation = gameState.products.reduce((s, p) => s + p.totalRevenue, 0);
   companies.push({
     id: 'player',
     name: gameState.companyName,

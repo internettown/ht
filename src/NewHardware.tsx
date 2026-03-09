@@ -41,7 +41,7 @@ export default function NewHardware({ gameState, onClose, onAddBrand, onStartPro
   // CPU Design state
   const [newBrandName, setNewBrandName] = useState('');
   const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
-  const [showAddBrand, setShowAddBrand] = useState(gameState.cpuBrands.length === 0);
+  const [showAddBrand, setShowAddBrand] = useState(false);
   const [cpuName, setCpuName] = useState('');
   const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null);
   const [showPackagePicker, setShowPackagePicker] = useState(false);
@@ -226,7 +226,7 @@ export default function NewHardware({ gameState, onClose, onAddBrand, onStartPro
           {/* Row 1: Brand + CPU Name */}
           <GridCell $col="1" $row="1">
             <GroupBox label="CPU brand">
-              {showAddBrand ? (
+              {showAddBrand || gameState.cpuBrands.length === 0 ? (
                 <BrandInputRow>
                   <TextInput
                     value={newBrandName}
@@ -238,9 +238,11 @@ export default function NewHardware({ gameState, onClose, onAddBrand, onStartPro
                   <Button size="sm" onClick={handleAddBrand} disabled={!newBrandName.trim()}>
                     Add
                   </Button>
-                  <Button size="sm" onClick={() => setShowAddBrand(false)}>
-                    Cancel
-                  </Button>
+                  {gameState.cpuBrands.length > 0 && (
+                    <Button size="sm" onClick={() => setShowAddBrand(false)}>
+                      Cancel
+                    </Button>
+                  )}
                 </BrandInputRow>
               ) : (
                 <Select

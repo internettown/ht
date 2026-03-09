@@ -7,6 +7,7 @@ import { Button, Window, WindowHeader, WindowContent, Separator } from 'react95'
 import htLogo from '/ht.svg';
 import NewGame from './NewGame';
 import Dashboard from './Dashboard';
+import GameOver from './GameOver';
 import type { GameState } from './types';
 import { DEFAULT_BANK, DEFAULT_MARKETING, DEFAULT_COMPETITOR_STATE } from './types';
 
@@ -302,7 +303,7 @@ const CrashHint = styled.p`
 
 // --- App ---
 
-type Screen = 'menu' | 'newgame' | 'dashboard';
+type Screen = 'menu' | 'newgame' | 'dashboard' | 'gameover';
 
 function App() {
   const [screen, setScreen] = useState<Screen>('menu');
@@ -321,6 +322,14 @@ function App() {
       setGameState(saved);
       setScreen('dashboard');
     }
+  };
+
+  const handleGameOver = (finalState: GameState) => {
+    setGameState(finalState);
+    // Clear the save so they can't reload into a finished game
+    localStorage.removeItem(AUTOSAVE_KEY);
+    localStorage.removeItem(SAVE_KEY);
+    setScreen('gameover');
   };
 
   return (
@@ -365,6 +374,13 @@ function App() {
           <Dashboard
             initialState={gameState}
             onQuit={() => setScreen('menu')}
+            onGameOver={handleGameOver}
+          />
+        )}
+        {screen === 'gameover' && gameState && (
+          <GameOver
+            gameState={gameState}
+            onMainMenu={() => setScreen('menu')}
           />
         )}
       </ThemeProvider>

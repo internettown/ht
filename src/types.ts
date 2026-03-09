@@ -179,6 +179,7 @@ export interface CompetitorState {
   activeProducts: CompetitorProduct[]; // currently on market
   knownCompanies: string[]; // company IDs player has seen
   companyValuations: Record<string, number>; // companyId -> valuation
+  companyRevenues: Record<string, number>; // companyId -> total accumulated revenue
 }
 
 export const DEFAULT_COMPETITOR_STATE: CompetitorState = {
@@ -186,6 +187,7 @@ export const DEFAULT_COMPETITOR_STATE: CompetitorState = {
   activeProducts: [],
   knownCompanies: [],
   companyValuations: {},
+  companyRevenues: {},
 };
 
 export interface GameState {
