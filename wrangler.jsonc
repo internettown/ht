@@ -13,6 +13,9 @@
   "compatibility_flags": [
     "nodejs_compat"
   ],
+  "routes": [
+    { "pattern": "ht.itwn.tech", "custom_domain": true }
+  ],
   "kv_namespaces": [
     {
       "binding": "BUILD_VERSION",

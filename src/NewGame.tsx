@@ -127,7 +127,7 @@ function LogoPreview({ config, size = 96 }: { config: LogoConfig; size?: number 
           fill={config.textColor}
           fontSize={size * 0.13}
           fontWeight="bold"
-          fontFamily="ms_sans_serif, sans-serif"
+          fontFamily="sans-serif"
           style={{ transform: `rotate(-${config.rotation}deg)`, transformOrigin: 'center' }}
         >
           {config.text.slice(0, 6)}
@@ -653,7 +653,7 @@ const EmojiPickerWrapper = styled.div`
     --epr-category-label-bg-color: #c0c0c0;
     --epr-search-input-bg-color: #fff;
     border: 2px inset #dfdfdf;
-    font-family: 'ms_sans_serif', sans-serif;
+    font-family: inherit;
   }
 `;
 

@@ -62,21 +62,8 @@ function loadSavedGame(): GameState | null {
 }
 
 const GlobalStyle = createGlobalStyle`
-  @font-face {
-    font-family: 'ms_sans_serif';
-    src: url('https://unpkg.com/react95@4.0.0/dist/fonts/ms_sans_serif.woff2') format('woff2');
-    font-weight: 400;
-    font-style: normal;
-  }
-  @font-face {
-    font-family: 'ms_sans_serif';
-    src: url('https://unpkg.com/react95@4.0.0/dist/fonts/ms_sans_serif_bold.woff2') format('woff2');
-    font-weight: 700;
-    font-style: normal;
-  }
-
   body {
-    font-family: 'ms_sans_serif';
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     background-color: #008080;
     -webkit-text-size-adjust: 100%;
     overscroll-behavior: none;
@@ -130,14 +117,14 @@ const Title = styled.h1`
   font-size: 22px;
   font-weight: 700;
   margin: 0 0 2px 0;
-  font-family: 'ms_sans_serif', sans-serif;
+  font-family: inherit;
 `;
 
 const Subtitle = styled.p`
   font-size: 12px;
   color: #444;
   margin: 0 0 16px 0;
-  font-family: 'ms_sans_serif', sans-serif;
+  font-family: inherit;
 `;
 
 const ButtonGroup = styled.div`

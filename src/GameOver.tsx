@@ -359,7 +359,7 @@ const YearScroll = styled.div<{ $duration: number }>`
 const YearText = styled.span<{ $highlight: boolean }>`
   font-size: 48px;
   font-weight: 700;
-  font-family: 'ms_sans_serif', monospace;
+  font-family: inherit;
   color: ${p => p.$highlight ? '#FFD700' : '#444'};
   ${p => p.$highlight && css`
     text-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
@@ -381,7 +381,7 @@ const MessageContainer = styled.div`
 const FadeInText = styled.div<{ $delay: number }>`
   font-size: 18px;
   color: #ccc;
-  font-family: 'ms_sans_serif', sans-serif;
+  font-family: inherit;
   text-align: center;
   opacity: 0;
   animation: ${fadeIn} 0.8s ease forwards;
@@ -498,7 +498,7 @@ const ScoreValue = styled.div`
   font-size: 28px;
   font-weight: 700;
   color: #000;
-  font-family: 'ms_sans_serif', monospace;
+  font-family: inherit;
 `;
 
 const GradeContainer = styled.div`
@@ -511,7 +511,7 @@ const GradeLetter = styled.div<{ $color: string }>`
   font-size: 64px;
   font-weight: 700;
   color: ${p => p.$color};
-  font-family: 'ms_sans_serif', sans-serif;
+  font-family: inherit;
   text-shadow: 2px 2px 0 rgba(0,0,0,0.15);
   animation: ${gradeStamp} 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 `;
