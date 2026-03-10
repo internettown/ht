@@ -25,21 +25,14 @@ function computeReviewScore(product: CPUProduct, isCompetitor = false): number {
   const stabilityScore = Math.max(0, Math.min(product.stability / 2.5, 10));
   const buildScore = Math.min(product.build / 1.5, 10);
 
+  // Price-to-value: logarithmic so reasonable markups aren't punished
+  // 2x markup = 9, 3x = 7.2, 5x = 5, 8x = 3
   const markup = product.unitCost > 0 ? product.price / product.unitCost : 10;
+  const priceScore = Math.max(0, Math.min(10, 12 - Math.log2(Math.max(1, markup)) * 3));
 
-  if (isCompetitor) {
-    // Original strict scoring for competitors
-    // 2x markup = 9, 3x = 7.2, 5x = 5, 8x = 3
-    const priceScore = Math.max(0, Math.min(10, 12 - Math.log2(Math.max(1, markup)) * 3));
-    const raw = (perfScore * 0.35 + stabilityScore * 0.2 + buildScore * 0.2 + priceScore * 0.25) * 0.8;
-    return Math.max(1, Math.min(100, Math.round(raw * 10)));
-  }
-
-  // Player scoring: more lenient on price, rewards good products
-  // 2x markup = 9.5, 3x = 8.6, 5x = 7.3, 8x = 6, 12x = 4.8
-  const priceScore = Math.max(0, Math.min(10, 12 - Math.log2(Math.max(1, markup)) * 2));
-  // Lower price weight (15% vs 25%), higher perf weight (45% vs 35%)
-  const raw = perfScore * 0.45 + stabilityScore * 0.2 + buildScore * 0.2 + priceScore * 0.15;
+  let raw = perfScore * 0.35 + stabilityScore * 0.2 + buildScore * 0.2 + priceScore * 0.25;
+  // Competitors get harsher reviews — big corps get less goodwill from reviewers
+  if (isCompetitor) raw *= 0.8;
   return Math.max(1, Math.min(100, Math.round(raw * 10)));
 }
 
