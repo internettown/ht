@@ -226,7 +226,7 @@ export default function NewHardware({ gameState, onClose, onAddBrand, onStartPro
           {/* Row 1: Brand + CPU Name */}
           <GridCell $col="1" $row="1">
             <GroupBox label="CPU brand">
-              {showAddBrand ? (
+              {showAddBrand || gameState.cpuBrands.length === 0 ? (
                 <BrandInputRow>
                   <TextInput
                     value={newBrandName}
@@ -238,9 +238,11 @@ export default function NewHardware({ gameState, onClose, onAddBrand, onStartPro
                   <Button size="sm" onClick={handleAddBrand} disabled={!newBrandName.trim()}>
                     Add
                   </Button>
-                  <Button size="sm" onClick={() => setShowAddBrand(false)}>
-                    Cancel
-                  </Button>
+                  {gameState.cpuBrands.length > 0 && (
+                    <Button size="sm" onClick={() => setShowAddBrand(false)}>
+                      Cancel
+                    </Button>
+                  )}
                 </BrandInputRow>
               ) : (
                 <Select
