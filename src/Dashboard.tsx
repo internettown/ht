@@ -24,7 +24,7 @@ import Market from './Market';
 import CPUReview, { computeReviewScore } from './CPUReview';
 import type { CPUProduct } from './types';
 import { CPU_RESEARCH, TECH_RESEARCH, rpPerDay } from './rndData';
-import { COMPETITOR_CPUS, COMPETITOR_COMPANIES, getCompetitorStats, generateCompanyLogoSvg, getCompanyById } from './competitorData';
+import { COMPETITOR_CPUS, getCompetitorStats, generateCompanyLogoSvg, getCompanyById } from './competitorData';
 import Milestones, { MILESTONES } from './Milestones';
 import UpdateUtility from './UpdateUtility';
 
@@ -1411,7 +1411,6 @@ export default function Dashboard({ initialState, onQuit, onGameOver }: Dashboar
             {sellingProducts.map((p) => {
               const history = p.salesHistory || [];
               const todaySales = history.length > 0 ? history[history.length - 1] : 0;
-              const dailyRevenue = todaySales * p.price;
               return (
                 <SellingCard key={p.id} onClick={() => setActivePanel(activePanel === 'products' ? null : 'products')}>
                   <SellingHeader>

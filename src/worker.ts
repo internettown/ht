@@ -1,3 +1,11 @@
+interface Fetcher {
+  fetch(request: Request): Promise<Response>;
+}
+
+interface KVNamespace {
+  get(key: string): Promise<string | null>;
+}
+
 interface Env {
   ASSETS: Fetcher;
   BUILD_VERSION: KVNamespace;

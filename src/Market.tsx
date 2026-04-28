@@ -1,6 +1,6 @@
 import styled from 'styled-components';
 import { Window, WindowHeader, WindowContent } from 'react95';
-import type { GameState, CompetitorProduct } from './types';
+import type { GameState } from './types';
 import { COMPETITOR_COMPANIES } from './competitorData';
 import { formatClock } from './cpuData';
 

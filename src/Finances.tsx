@@ -8,7 +8,7 @@ import {
   GroupBox,
   Separator,
 } from 'react95';
-import type { GameState, Transaction, MonthlySnapshot } from './types';
+import type { GameState } from './types';
 
 interface FinancesProps {
   gameState: GameState;

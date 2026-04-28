@@ -45,11 +45,6 @@ export default function Companies({ gameState, onClose }: CompaniesProps) {
     const comp = COMPETITOR_COMPANIES.find(c => c.id === compId);
     if (!comp) continue;
     const valuation = cs.companyValuations[compId] || 0;
-    const productCount = cs.activeProducts.filter(p => p.companyId === compId).length
-      + cs.releasedCPUIds.filter(id => {
-        const prod = cs.activeProducts.find(p => p.id === id);
-        return prod?.companyId === compId;
-      }).length;
     // Count all released CPUs for this company
     const totalProducts = cs.releasedCPUIds.length > 0
       ? cs.activeProducts.filter(p => p.companyId === compId).length

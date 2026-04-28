@@ -5,7 +5,7 @@ import {
   WindowContent,
 } from 'react95';
 import type { CPUProduct } from './types';
-import { CPU_PACKAGES, formatClock } from './cpuData';
+import { CPU_PACKAGES } from './cpuData';
 
 interface CPUReviewProps {
   product: CPUProduct;

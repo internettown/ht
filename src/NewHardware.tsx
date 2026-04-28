@@ -720,18 +720,6 @@ const RecommendedPrice = styled.div`
   }
 `;
 
-const PackageStats = styled.div`
-  display: flex;
-  gap: 12px;
-  margin-top: 4px;
-  font-size: 11px;
-`;
-
-const StatItem = styled.div`
-  display: flex;
-  gap: 3px;
-`;
-
 const StatLabel = styled.span`
   color: #666;
 `;
@@ -745,13 +733,6 @@ const PriceRow = styled.div`
   align-items: center;
   gap: 4px;
   font-weight: 700;
-`;
-
-const UnitCostHint = styled.span<{ $profitable: boolean }>`
-  font-size: 11px;
-  font-weight: 400;
-  color: ${(p) => (p.$profitable ? '#006400' : '#cc0000')};
-  white-space: nowrap;
 `;
 
 const SliderRow = styled.div`
@@ -784,13 +765,6 @@ const CostWarning = styled.span<{ $canAfford: boolean }>`
   font-size: 12px;
   font-weight: 700;
   color: ${(p) => (p.$canAfford ? '#006400' : '#cc0000')};
-`;
-
-const PackageSelectRow = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
 `;
 
 const PackageSelectedName = styled.span`
