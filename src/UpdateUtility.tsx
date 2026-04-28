@@ -6,6 +6,23 @@ declare const __BUILD_ID__: string;
 declare const __APP_VERSION__: string;
 
 const CURRENT_BUILD = __BUILD_ID__;
+const DISMISSED_KEY = 'ht_update_dismissed_build';
+const ATTEMPTED_KEY = 'ht_update_attempted_build';
+
+// If a previous reload tried to apply a build but we still booted with the
+// same CURRENT_BUILD, the reload didn't pick up the new bundle (CDN/cache or
+// KV/bundle mismatch). Auto-dismiss that build to avoid an update loop.
+(() => {
+  try {
+    const attempted = localStorage.getItem(ATTEMPTED_KEY);
+    if (attempted && attempted !== CURRENT_BUILD) {
+      localStorage.setItem(DISMISSED_KEY, attempted);
+    }
+    localStorage.removeItem(ATTEMPTED_KEY);
+  } catch {
+    // ignore storage errors
+  }
+})();
 
 interface VersionInfo {
   buildId: string;
@@ -30,10 +47,12 @@ export default function UpdateUtility({ onSave }: UpdateUtilityProps) {
       const res = await fetch('/__version', { cache: 'no-store' });
       if (!res.ok) return;
       const data: VersionInfo = await res.json();
-      if (data.buildId && data.buildId !== CURRENT_BUILD) {
-        setRemoteInfo(data);
-        setUpdateAvailable(true);
-      }
+      if (!data.buildId || data.buildId === CURRENT_BUILD) return;
+      let dismissed = '';
+      try { dismissed = localStorage.getItem(DISMISSED_KEY) || ''; } catch { /* ignore */ }
+      if (data.buildId === dismissed) return;
+      setRemoteInfo(data);
+      setUpdateAvailable(true);
     } catch {
       // network error, ignore
     }
@@ -65,6 +84,9 @@ export default function UpdateUtility({ onSave }: UpdateUtilityProps) {
   const handleUpdate = () => {
     setUpdating(true);
     onSave();
+    if (remoteInfo?.buildId) {
+      try { localStorage.setItem(ATTEMPTED_KEY, remoteInfo.buildId); } catch { /* ignore */ }
+    }
     setProgress(30);
     setTimeout(() => setProgress(60), 400);
     setTimeout(() => setProgress(90), 800);
@@ -72,6 +94,13 @@ export default function UpdateUtility({ onSave }: UpdateUtilityProps) {
       setProgress(100);
       window.location.reload();
     }, 1200);
+  };
+
+  const handleDismiss = () => {
+    if (remoteInfo?.buildId) {
+      try { localStorage.setItem(DISMISSED_KEY, remoteInfo.buildId); } catch { /* ignore */ }
+    }
+    setUpdateAvailable(false);
   };
 
   if (!updateAvailable) return null;
@@ -114,6 +143,9 @@ export default function UpdateUtility({ onSave }: UpdateUtilityProps) {
                 Your game will be saved automatically before updating.
               </SaveNote>
               <ButtonRow>
+                <Button onClick={handleDismiss} style={{ padding: '6px 16px' }}>
+                  Later
+                </Button>
                 <Button primary onClick={handleUpdate} style={{ fontWeight: 700, padding: '6px 24px' }}>
                   Update Now
                 </Button>
@@ -203,5 +235,6 @@ const SaveNote = styled.p`
 const ButtonRow = styled.div`
   display: flex;
   justify-content: flex-end;
+  gap: 8px;
   margin-top: 8px;
 `;
