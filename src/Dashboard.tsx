@@ -578,18 +578,23 @@ export default function Dashboard({ initialState, onQuit, onGameOver }: Dashboar
           const scoreContext = { completedResearch: res.completedResearch };
           const reviewScore = computeReviewScore(p, false, scoreContext);
           const valueMetrics = getCpuValueMetrics(p, scoreContext);
-          const demandMult = Math.max(0.05, Math.pow(reviewScore / 100, 1.6) * 2.1);
-          const valueMult = Math.max(0.05, valueMetrics.valueScore / 100);
+          const scoreDemand = Math.pow(reviewScore / 100, 2.15);
+          const demandMult = Math.max(0.03, scoreDemand);
+          const valueMult = Math.max(0.1, 0.45 + valueMetrics.valueScore / 100);
           const overpricePenalty = valueMetrics.priceRatio > 1
             ? 1 / Math.pow(valueMetrics.priceRatio, 1.35)
             : 1 + Math.min(0.25, (1 - valueMetrics.priceRatio) * 0.35);
-          // Hype multiplier: hype 0 = 1x, hype 50 = 1.5x, hype 100 = 2x
-          const hypeMult = 1 + (mkt.hype / 100);
+          // Hype multiplier: hype 0 = 1x, hype 50 ~= 3.75x, hype 100 = 8x
+          const hypeRatio = mkt.hype / 100;
+          const hypeMult = 1 + hypeRatio * 4 + Math.pow(hypeRatio, 2) * 3;
           // Competition multiplier: more competitors = harder to sell
           const compState = prev.competitorState || DEFAULT_COMPETITOR_STATE;
           const activeCompetitors = compState.activeProducts.length;
-          const competitionMult = activeCompetitors > 0 ? Math.max(0.3, 1 - activeCompetitors * 0.06) : 1;
-          const peakSales = (p.performance * 1.5 + p.build * 0.8 + 20) * demandMult * valueMult * overpricePenalty * hypeMult * competitionMult;
+          const competitionMult = activeCompetitors > 0 ? Math.max(0.45, 1 - activeCompetitors * 0.045) : 1;
+          const baseMarketDemand = 850;
+          const hardwareDemand = p.performance * 2 + p.build * 1.1 + 60;
+          const launchMomentum = days <= 30 ? 1.35 : days <= 90 ? 1.15 : 1;
+          const peakSales = (baseMarketDemand + hardwareDemand) * demandMult * valueMult * overpricePenalty * hypeMult * competitionMult * launchMomentum;
 
           // Natural decay: stays strong ~120 days, then gradually drops off over ~1 year
           const decayFactor = 1 / (1 + Math.pow(days / 200, 2.5));
