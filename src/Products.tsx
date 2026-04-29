@@ -15,7 +15,7 @@ import {
 } from 'react95';
 import type { GameState, CPUProduct } from './types';
 import { TECH_PROCESSES, CPU_PACKAGES, CORE_TYPES, formatClock } from './cpuData';
-import { computeReviewScore } from './CPUReview';
+import { MAX_SELL_PRICE, computeReviewScore } from './cpuScoring';
 
 interface ProductsProps {
   gameState: GameState;
@@ -49,7 +49,7 @@ export default function Products({ gameState, onChangePrice, onDiscontinue, onCl
   const handleSavePrice = (id: string) => {
     const num = parseFloat(editPrice);
     if (!isNaN(num) && num > 0) {
-      onChangePrice(id, num);
+      onChangePrice(id, Math.min(MAX_SELL_PRICE, num));
     }
     setEditingPriceId(null);
   };
@@ -131,7 +131,11 @@ export default function Products({ gameState, onChangePrice, onDiscontinue, onCl
                     <span>$</span>
                     <TextInput
                       value={editPrice}
-                      onChange={(e) => setEditPrice(e.target.value.replace(/[^0-9.]/g, ''))}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/[^0-9.]/g, '');
+                        const num = parseFloat(value);
+                        setEditPrice(!isNaN(num) && num > MAX_SELL_PRICE ? String(MAX_SELL_PRICE) : value);
+                      }}
                       style={{ width: 80 }}
                     />
                     <Button size="sm" onClick={() => handleSavePrice(product.id)}>OK</Button>

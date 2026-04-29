@@ -1,7 +1,7 @@
 import styled from 'styled-components';
 import { Window, WindowHeader, WindowContent, ProgressBar } from 'react95';
 import type { GameState } from './types';
-import { computeReviewScore } from './CPUReview';
+import { computeReviewScore } from './cpuScoring';
 
 interface MilestonesProps {
   gameState: GameState;

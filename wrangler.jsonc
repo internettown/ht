@@ -15,11 +15,5 @@
   ],
   "routes": [
     { "pattern": "ht.itwn.tech", "custom_domain": true }
-  ],
-  "kv_namespaces": [
-    {
-      "binding": "BUILD_VERSION",
-      "id": "49d682f5b56a4e7faef3cadc8b5035ea"
-    }
   ]
 }

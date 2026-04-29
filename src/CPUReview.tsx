@@ -6,6 +6,7 @@ import {
 } from 'react95';
 import type { CPUProduct } from './types';
 import { CPU_PACKAGES } from './cpuData';
+import { computeReviewScore } from './cpuScoring';
 
 interface CPUReviewProps {
   product: CPUProduct;
@@ -17,23 +18,6 @@ interface CPUReviewProps {
 
 function getPackageName(id: string): string {
   return CPU_PACKAGES.find((p) => p.id === id)?.name ?? id;
-}
-
-// Score 1-100 based on price/performance/stability/build
-function computeReviewScore(product: CPUProduct, isCompetitor = false): number {
-  const perfScore = Math.min(product.performance / 4, 10);
-  const stabilityScore = Math.max(0, Math.min(product.stability / 2.5, 10));
-  const buildScore = Math.min(product.build / 1.5, 10);
-
-  // Price-to-value: logarithmic so reasonable markups aren't punished
-  // 2x markup = 9, 3x = 7.2, 5x = 5, 8x = 3
-  const markup = product.unitCost > 0 ? product.price / product.unitCost : 10;
-  const priceScore = Math.max(0, Math.min(10, 12 - Math.log2(Math.max(1, markup)) * 3));
-
-  let raw = perfScore * 0.35 + stabilityScore * 0.2 + buildScore * 0.2 + priceScore * 0.25;
-  // Competitors get harsher reviews — big corps get less goodwill from reviewers
-  if (isCompetitor) raw *= 0.8;
-  return Math.max(1, Math.min(100, Math.round(raw * 10)));
 }
 
 function generateReviewText(product: CPUProduct, score: number, companyName: string): string {
@@ -177,9 +161,6 @@ export default function CPUReview({ product, companyLogo, companyName, isCompeti
     </ReviewOverlay>
   );
 }
-
-// Export score computation for use in sales calculation
-export { computeReviewScore };
 
 const ReviewOverlay = styled.div`
   position: fixed;

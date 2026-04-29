@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import styled, { keyframes, css } from 'styled-components';
 import { Window, WindowHeader, WindowContent, Button, Separator } from 'react95';
 import type { GameState } from './types';
-import { computeReviewScore } from './CPUReview';
+import { computeReviewScore } from './cpuScoring';
 import { MILESTONES } from './Milestones';
 
 interface GameOverProps {

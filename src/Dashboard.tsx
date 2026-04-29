@@ -21,12 +21,12 @@ import Finances from './Finances';
 import Marketing from './Marketing';
 import Companies from './Companies';
 import Market from './Market';
-import CPUReview, { computeReviewScore } from './CPUReview';
+import CPUReview from './CPUReview';
+import { MAX_SELL_PRICE, computeReviewScore, getCpuValueMetrics } from './cpuScoring';
 import type { CPUProduct } from './types';
 import { CPU_RESEARCH, TECH_RESEARCH, rpPerDay } from './rndData';
 import { COMPETITOR_CPUS, getCompetitorStats, generateCompanyLogoSvg, getCompanyById } from './competitorData';
 import Milestones, { MILESTONES } from './Milestones';
-import UpdateUtility from './UpdateUtility';
 
 // 16x16 pixel art icons as data URLs
 function pixelIcon(pixels: string, color = '#000'): string {
@@ -292,6 +292,15 @@ function migrateState(state: GameState): GameState {
   }
   if (!s.products) {
     s = { ...s, products: [] };
+  } else {
+    s = {
+      ...s,
+      products: s.products.map((p) => ({
+        ...p,
+        price: Math.min(MAX_SELL_PRICE, p.price),
+        previousPrice: Math.min(MAX_SELL_PRICE, p.previousPrice ?? p.price),
+      })),
+    };
   }
   if (!s.finance) {
     s = { ...s, finance: { ...DEFAULT_FINANCE } };
@@ -310,7 +319,13 @@ function SalesGraph({ history }: { history: number[] }) {
   const h = 40;
   const padding = 2;
   const data = history.slice(-30); // show last 30 days
-  if (data.length < 2) return null;
+  if (data.length < 2) {
+    return (
+      <SalesGraphWrap>
+        <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} />
+      </SalesGraphWrap>
+    );
+  }
   const max = Math.max(...data, 1);
   const stepX = (w - padding * 2) / (data.length - 1);
   const points = data.map((v, i) => {
@@ -558,19 +573,22 @@ export default function Dashboard({ initialState, onQuit, onGameOver }: Dashboar
           boost *= 0.933;
           if (boost < 0.01) boost = 0;
 
-          // Base sales from stats — high launch volume
-          const priceRatio = p.unitCost > 0 ? p.price / p.unitCost : p.price;
-          const demandMult = Math.max(0.2, 2.5 - priceRatio * 0.4);
-          // Review score influences sales: score 50 = 1x, score 100 = 1.8x, score 1 = 0.3x
+          // Base sales from stats. Reviews and fair-price value drive demand,
+          // so overpriced CPUs cannot sell strongly on specs alone.
           const reviewScore = computeReviewScore(p);
-          const reviewMult = 0.1 + (reviewScore / 100) * 1.7;
+          const valueMetrics = getCpuValueMetrics(p);
+          const demandMult = Math.max(0.05, Math.pow(reviewScore / 100, 1.6) * 2.1);
+          const valueMult = Math.max(0.05, valueMetrics.valueScore / 100);
+          const overpricePenalty = valueMetrics.priceRatio > 1
+            ? 1 / Math.pow(valueMetrics.priceRatio, 1.35)
+            : 1 + Math.min(0.25, (1 - valueMetrics.priceRatio) * 0.35);
           // Hype multiplier: hype 0 = 1x, hype 50 = 1.5x, hype 100 = 2x
           const hypeMult = 1 + (mkt.hype / 100);
           // Competition multiplier: more competitors = harder to sell
           const compState = prev.competitorState || DEFAULT_COMPETITOR_STATE;
           const activeCompetitors = compState.activeProducts.length;
           const competitionMult = activeCompetitors > 0 ? Math.max(0.3, 1 - activeCompetitors * 0.06) : 1;
-          const peakSales = (p.performance * 1.5 + p.build * 0.8 + 20) * demandMult * reviewMult * hypeMult * competitionMult;
+          const peakSales = (p.performance * 1.5 + p.build * 0.8 + 20) * demandMult * valueMult * overpricePenalty * hypeMult * competitionMult;
 
           // Natural decay: stays strong ~120 days, then gradually drops off over ~1 year
           const decayFactor = 1 / (1 + Math.pow(days / 200, 2.5));
@@ -1246,10 +1264,11 @@ export default function Dashboard({ initialState, onQuit, onGameOver }: Dashboar
           <Products
             gameState={gameState}
             onChangePrice={(productId, newPrice) => {
+              const cappedPrice = Math.min(MAX_SELL_PRICE, newPrice);
               setGameState((prev) => ({
                 ...prev,
                 products: prev.products.map((p) =>
-                  p.id === productId ? { ...p, price: newPrice } : p
+                  p.id === productId ? { ...p, price: cappedPrice } : p
                 ),
               }));
             }}
@@ -1434,9 +1453,7 @@ export default function Dashboard({ initialState, onQuit, onGameOver }: Dashboar
                       );
                     })()}
                   </SellingStatsGrid>
-                  {history.length > 1 && (
-                    <SalesGraph history={history} />
-                  )}
+                  <SalesGraph history={history} />
                 </SellingCard>
               );
             })}
@@ -1512,10 +1529,6 @@ export default function Dashboard({ initialState, onQuit, onGameOver }: Dashboar
         </Toast>
       )}
 
-      <UpdateUtility onSave={() => {
-        saveState(SAVE_KEY, gameState);
-        saveState(AUTOSAVE_KEY, gameState);
-      }} />
     </DashboardWrapper>
   );
 }
@@ -1550,12 +1563,14 @@ const TopBarLeft = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
 `;
 
 const TopBarRight = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
 `;
 
 const MenuButton = styled(Button)`
@@ -1594,6 +1609,7 @@ const DateDisplay = styled.span`
   font-size: 13px;
   font-weight: 700;
   min-width: 120px;
+  font-variant-numeric: tabular-nums;
 
   ${MOBILE} {
     min-width: auto;
@@ -1662,6 +1678,7 @@ const NotifCard = styled.div`
   border: 2px outset #dfdfdf;
   background: #fff;
   cursor: pointer;
+  min-height: 58px;
 
   &:hover {
     background: #f0f0ff;
@@ -1718,6 +1735,7 @@ const BalanceDisplay = styled.span`
   min-width: 120px;
   text-align: right;
   cursor: pointer;
+  font-variant-numeric: tabular-nums;
   &:hover {
     background: #f0fff0;
   }
@@ -1941,6 +1959,7 @@ const SellingCard = styled.div`
   background: #fff;
   padding: 6px;
   cursor: pointer;
+  min-height: 146px;
 
   &:hover {
     background: #f0fff0;
@@ -1977,6 +1996,12 @@ const SellingStatLabel = styled.span`
 const SellingStatValue = styled.span`
   font-weight: 700;
   color: #222;
+  min-width: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;
 
 const SalesGraphWrap = styled.div`
@@ -1986,6 +2011,9 @@ const SalesGraphWrap = styled.div`
   padding: 2px;
   display: flex;
   justify-content: center;
+  width: 100%;
+  height: 46px;
+  overflow: hidden;
 `;
 
 const NewsPanel = styled.div`

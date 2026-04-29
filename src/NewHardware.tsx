@@ -12,6 +12,7 @@ import {
   GroupBox,
 } from 'react95';
 import type { GameState, CPUProduct } from './types';
+import { MAX_SELL_PRICE } from './cpuScoring';
 import {
   TECH_PROCESSES,
   CPU_PACKAGES,
@@ -361,7 +362,7 @@ export default function NewHardware({ gameState, onClose, onAddBrand, onStartPro
                     if (val === '' || val === '.') {
                       setPrice(0);
                     } else if (!isNaN(num)) {
-                      setPrice(num);
+                      setPrice(Math.min(MAX_SELL_PRICE, num));
                     }
                   }}
                   style={{ flex: 1 }}
@@ -373,10 +374,10 @@ export default function NewHardware({ gameState, onClose, onAddBrand, onStartPro
               )}
               {designResult && (
                 <RecommendedPrice onClick={() => {
-                  const rec = Math.round(designResult.unitCost * 2.5 * 100) / 100;
+                  const rec = Math.min(MAX_SELL_PRICE, Math.round(designResult.unitCost * 2.5 * 100) / 100);
                   setPrice(rec);
                 }}>
-                  Recommended: ${(Math.round(designResult.unitCost * 2.5 * 100) / 100).toFixed(2)}
+                  Recommended: ${Math.min(MAX_SELL_PRICE, Math.round(designResult.unitCost * 2.5 * 100) / 100).toFixed(2)}
                 </RecommendedPrice>
               )}
             </GroupBox>
@@ -402,6 +403,7 @@ export default function NewHardware({ gameState, onClose, onAddBrand, onStartPro
               onClick={() => {
                 if (!designResult || !selectedPackage || !selectedCore || !techProcess) return;
                 const buildMult = buildQualityBuildMultiplier(buildQuality);
+                const cappedPrice = Math.min(MAX_SELL_PRICE, price);
                 const product: CPUProduct = {
                   id: crypto.randomUUID(),
                   name: cpuName.trim(),
@@ -411,7 +413,7 @@ export default function NewHardware({ gameState, onClose, onAddBrand, onStartPro
                   coreId: selectedCore.id,
                   clockSpeed: clampedClock,
                   buildQuality,
-                  price,
+                  price: cappedPrice,
                   unitCost: designResult.unitCost,
                   designCost: designResult.designCost,
                   designTimeDays: designResult.designTimeDays,
@@ -424,7 +426,7 @@ export default function NewHardware({ gameState, onClose, onAddBrand, onStartPro
                   salesHistory: [],
                   daysOnSale: 0,
                   salesBoost: 0,
-                  previousPrice: price,
+                  previousPrice: cappedPrice,
                   performance: selectedPackage.performance + selectedCore.performance,
                   stability: selectedPackage.stability + selectedCore.stability,
                   build: Math.round((selectedPackage.build + selectedCore.build) * buildMult * 10) / 10,
