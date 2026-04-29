@@ -13,6 +13,7 @@ interface CPUReviewProps {
   companyLogo: string;
   companyName: string;
   isCompetitor?: boolean;
+  completedResearch?: string[];
   onClose: () => void;
 }
 
@@ -101,8 +102,8 @@ function ScoreGauge({ score }: { score: number }) {
   );
 }
 
-export default function CPUReview({ product, companyLogo, companyName, isCompetitor, onClose }: CPUReviewProps) {
-  const score = computeReviewScore(product, isCompetitor);
+export default function CPUReview({ product, companyLogo, companyName, isCompetitor, completedResearch, onClose }: CPUReviewProps) {
+  const score = computeReviewScore(product, isCompetitor, { completedResearch });
   const reviewText = generateReviewText(product, score, companyName);
 
   return (

@@ -46,7 +46,7 @@ function calculateScore(gs: GameState): ScoreBreakdown {
   const totalUnitsSold = gs.products.reduce((s, p) => s + p.totalUnitsSold, 0);
   const unitsScore = Math.min(1000, Math.floor(Math.sqrt(totalUnitsSold) / 3));
 
-  const reviewScores = released.map(p => computeReviewScore(p));
+  const reviewScores = released.map(p => computeReviewScore(p, false, { completedResearch: gs.research.completedResearch }));
   const avgReviewScore = reviewScores.length > 0
     ? Math.round(reviewScores.reduce((a, b) => a + b, 0) / reviewScores.length)
     : 0;

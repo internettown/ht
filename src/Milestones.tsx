@@ -123,14 +123,14 @@ const MILESTONES: Milestone[] = [
     name: 'Critical Acclaim',
     description: 'Get a review score of 80+ on a CPU',
     category: 'product',
-    check: (gs) => gs.products.some(p => (p.status === 'selling' || p.status === 'discontinued') && computeReviewScore(p) >= 80),
+    check: (gs) => gs.products.some(p => (p.status === 'selling' || p.status === 'discontinued') && computeReviewScore(p, false, { completedResearch: gs.research.completedResearch }) >= 80),
   },
   {
     id: 'review-95',
     name: 'Masterpiece',
     description: 'Get a review score of 95+ on a CPU',
     category: 'product',
-    check: (gs) => gs.products.some(p => (p.status === 'selling' || p.status === 'discontinued') && computeReviewScore(p) >= 95),
+    check: (gs) => gs.products.some(p => (p.status === 'selling' || p.status === 'discontinued') && computeReviewScore(p, false, { completedResearch: gs.research.completedResearch }) >= 95),
   },
   {
     id: 'brand-created',

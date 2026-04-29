@@ -59,7 +59,9 @@ export default function Products({ gameState, onChangePrice, onDiscontinue, onCl
       ? daysBetween(product.sellStartDate, gameState.gameDate)
       : 0;
 
-    const reviewScore = product.status !== 'designing' ? computeReviewScore(product) : null;
+    const reviewScore = product.status !== 'designing'
+      ? computeReviewScore(product, false, { completedResearch: gameState.research.completedResearch })
+      : null;
 
     return (
       <ProductCard key={product.id}>

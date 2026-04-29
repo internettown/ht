@@ -575,8 +575,9 @@ export default function Dashboard({ initialState, onQuit, onGameOver }: Dashboar
 
           // Base sales from stats. Reviews and fair-price value drive demand,
           // so overpriced CPUs cannot sell strongly on specs alone.
-          const reviewScore = computeReviewScore(p);
-          const valueMetrics = getCpuValueMetrics(p);
+          const scoreContext = { completedResearch: res.completedResearch };
+          const reviewScore = computeReviewScore(p, false, scoreContext);
+          const valueMetrics = getCpuValueMetrics(p, scoreContext);
           const demandMult = Math.max(0.05, Math.pow(reviewScore / 100, 1.6) * 2.1);
           const valueMult = Math.max(0.05, valueMetrics.valueScore / 100);
           const overpricePenalty = valueMetrics.priceRatio > 1
@@ -1465,6 +1466,7 @@ export default function Dashboard({ initialState, onQuit, onGameOver }: Dashboar
           product={reviewProduct}
           companyLogo={logoDataUrl}
           companyName={gameState.companyName}
+          completedResearch={gameState.research.completedResearch}
           onClose={() => {
             setReviewProduct(null);
             setSpeed(speedBeforeReview.current);
@@ -1504,6 +1506,7 @@ export default function Dashboard({ initialState, onQuit, onGameOver }: Dashboar
           companyLogo={'data:image/svg+xml,' + encodeURIComponent(competitorReview.companyLogoSvg)}
           companyName={competitorReview.product.companyName}
           isCompetitor
+          completedResearch={gameState.research.completedResearch}
           onClose={() => {
             setCompetitorReview(null);
             setSpeed(speedBeforeReview.current);
