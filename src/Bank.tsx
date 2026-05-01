@@ -72,8 +72,8 @@ export default function Bank({
   };
 
   const loanAmount = parseMoney(loanAmountStr, availableLoan);
-  const repayAmount = parseMoney(repayAmountStr, Math.min(bank.loanBalance, gameState.balance));
-  const bailoutRepayAmount = parseMoney(bailoutRepayStr, Math.min(bank.bailoutOwed, gameState.balance));
+  const repayAmount = parseMoney(repayAmountStr, bank.loanBalance);
+  const bailoutRepayAmount = parseMoney(bailoutRepayStr, bank.bailoutOwed);
 
   return (
     <StyledWindow>
@@ -233,16 +233,10 @@ export default function Bank({
                   <Button
                     onClick={onPayTax}
                     primary
-                    disabled={gameState.balance < bank.taxDue}
                     fullWidth
                   >
                     Pay Tax ({formatMoney(bank.taxDue)})
                   </Button>
-                  {gameState.balance < bank.taxDue && (
-                    <HintText style={{ color: '#cc0000' }}>
-                      Insufficient funds to pay tax.
-                    </HintText>
-                  )}
                 </>
               )}
 

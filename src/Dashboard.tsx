@@ -24,7 +24,7 @@ import Market from './Market';
 import CPUReview from './CPUReview';
 import { MAX_SELL_PRICE, computeReviewScore, getCpuValueMetrics } from './cpuScoring';
 import type { CPUProduct } from './types';
-import { CPU_RESEARCH, TECH_RESEARCH, rpPerDay } from './rndData';
+import { CPU_RESEARCH, TECH_RESEARCH, getMaxResearchBudget, rpPerDay } from './rndData';
 import { COMPETITOR_CPUS, getCompetitorStats, generateCompanyLogoSvg, getCompanyById } from './competitorData';
 import Milestones, { MILESTONES } from './Milestones';
 
@@ -274,6 +274,17 @@ const DEFAULT_RESEARCH = {
   cpuExperience: 0,
 };
 
+const COMPETITOR_SALES_POWER_MULTIPLIER = 3.5;
+const COMPETITOR_DAILY_SALES_MULTIPLIER = 1.25;
+const COMPETITOR_VALUATION_MULTIPLIER = 12;
+const COMPETITOR_BASE_VALUATION = 750_000;
+
+function getCompetitorBaseSalesPower(product: Pick<CompetitorProduct, 'performance' | 'build' | 'stability' | 'price'>): number {
+  const qualityPower = product.performance * 3 + product.build * 2 + Math.max(0, product.stability) * 1.5;
+  const premiumPower = product.price > 200 ? 90 : product.price > 120 ? 45 : 0;
+  return (220 + qualityPower + premiumPower) * COMPETITOR_SALES_POWER_MULTIPLIER;
+}
+
 function migrateState(state: GameState): GameState {
   let s = state;
   if (!s.research) {
@@ -380,43 +391,40 @@ export default function Dashboard({ initialState, onQuit, onGameOver }: Dashboar
         const item = allResearch.find((r) => r.id === res.currentResearch);
         if (item) {
           const cost = res.dailyBudget;
-          if (next.balance >= cost || next.balance === Infinity) {
-            if (next.balance !== Infinity) next.balance -= cost;
-            dayTxns.push({ date: dateStr, type: 'expense', category: 'R&D', description: `R&D daily budget (${item.name})`, amount: cost });
-            res.currentResearchPoints += rpPerDay(res.dailyBudget);
+          if (next.balance !== Infinity) next.balance -= cost;
+          dayTxns.push({ date: dateStr, type: 'expense', category: 'R&D', description: `R&D daily budget (${item.name})`, amount: cost });
+          res.currentResearchPoints += rpPerDay(res.dailyBudget);
 
-            // Check if research is complete
-            if (res.currentResearchPoints >= item.researchPoints) {
-              res.completedResearch = [...res.completedResearch, item.id];
-              res.currentResearch = null;
-              res.currentResearchPoints = 0;
-              // Grant CPU experience for completing CPU research
-              if (CPU_RESEARCH.some((r) => r.id === item.id)) {
-                res.cpuExperience += Math.round(item.researchPoints / 2);
-              }
-              // Auto-unlock free techs whose prerequisite was just completed
-              const autoUnlocks = allResearch.filter(
-                (r) => r.cost === 0 && r.prerequisite === item.id && !res.completedResearch.includes(r.id)
-              );
-              for (const auto of autoUnlocks) {
-                res.completedResearch = [...res.completedResearch, auto.id];
-              }
+          // Check if research is complete
+          if (res.currentResearchPoints >= item.researchPoints) {
+            res.completedResearch = [...res.completedResearch, item.id];
+            res.currentResearch = null;
+            res.currentResearchPoints = 0;
+            // Grant CPU experience for completing CPU research
+            if (CPU_RESEARCH.some((r) => r.id === item.id)) {
+              res.cpuExperience += Math.round(item.researchPoints / 2);
+            }
+            // Auto-unlock free techs whose prerequisite was just completed
+            const autoUnlocks = allResearch.filter(
+              (r) => r.cost === 0 && r.prerequisite === item.id && !res.completedResearch.includes(r.id)
+            );
+            for (const auto of autoUnlocks) {
+              res.completedResearch = [...res.completedResearch, auto.id];
+            }
 
-              // Dequeue next research if any
-              if (res.researchQueue && res.researchQueue.length > 0 && !res.currentResearch) {
-                let queue = [...res.researchQueue];
-                while (queue.length > 0 && !res.currentResearch) {
-                  const nextId = queue.shift()!;
-                  if (!res.completedResearch.includes(nextId)) {
-                    res.currentResearch = nextId;
-                    res.currentResearchPoints = 0;
-                  }
+            // Dequeue next research if any
+            if (res.researchQueue && res.researchQueue.length > 0 && !res.currentResearch) {
+              const queue = [...res.researchQueue];
+              while (queue.length > 0 && !res.currentResearch) {
+                const nextId = queue.shift()!;
+                if (!res.completedResearch.includes(nextId)) {
+                  res.currentResearch = nextId;
+                  res.currentResearchPoints = 0;
                 }
-                res.researchQueue = queue;
               }
+              res.researchQueue = queue;
             }
           }
-          // else: can't afford, research pauses (no RP added)
         }
       }
 
@@ -428,10 +436,8 @@ export default function Dashboard({ initialState, onQuit, onGameOver }: Dashboar
       // Monthly interest on loans: charged on 1st of each month, deducted from balance
       if (nextDate.getDate() === 1 && bk.loanBalance > 0) {
         const interest = Math.round(bk.loanBalance * LOAN_INTEREST_RATE);
-        if (next.balance >= interest || next.balance === Infinity) {
-          if (next.balance !== Infinity) next.balance -= interest;
-          dayTxns.push({ date: dateStr, type: 'expense', category: 'Loan Interest', description: 'Monthly loan interest', amount: interest });
-        }
+        if (next.balance !== Infinity) next.balance -= interest;
+        dayTxns.push({ date: dateStr, type: 'expense', category: 'Loan Interest', description: 'Monthly loan interest', amount: interest });
       }
 
       // Year transition: calculate tax from last year's income
@@ -445,12 +451,10 @@ export default function Dashboard({ initialState, onQuit, onGameOver }: Dashboar
 
         // Auto-pay tax on Jan 1 if enabled
         if (bk.autoPayTax && tax > 0) {
-          if (next.balance >= tax || next.balance === Infinity) {
-            if (next.balance !== Infinity) next.balance -= tax;
-            bk.taxDue = 0;
-            bk.taxPaidThisYear = true;
-            dayTxns.push({ date: dateStr, type: 'expense', category: 'Tax', description: `Income tax (${prevDate.getFullYear()})`, amount: tax });
-          }
+          if (next.balance !== Infinity) next.balance -= tax;
+          bk.taxDue = 0;
+          bk.taxPaidThisYear = true;
+          dayTxns.push({ date: dateStr, type: 'expense', category: 'Tax', description: `Income tax (${prevDate.getFullYear()})`, amount: tax });
         }
       }
 
@@ -463,17 +467,8 @@ export default function Dashboard({ initialState, onQuit, onGameOver }: Dashboar
       ) {
         const penalty = Math.round(bk.taxDue * TAX_LATE_PENALTY);
         const totalDue = bk.taxDue + penalty;
-        if (next.balance >= totalDue || next.balance === Infinity) {
-          if (next.balance !== Infinity) next.balance -= totalDue;
-          dayTxns.push({ date: dateStr, type: 'expense', category: 'Tax Penalty', description: `Late tax payment + ${TAX_LATE_PENALTY * 100}% penalty`, amount: totalDue });
-        } else {
-          // Can't afford — deduct what we can, rest goes to bailout debt
-          const canPay = Math.max(0, next.balance);
-          next.balance = 0;
-          bk.bailoutOwed += totalDue - canPay;
-          if (canPay > 0) dayTxns.push({ date: dateStr, type: 'expense', category: 'Tax Penalty', description: 'Partial late tax payment', amount: canPay });
-          dayTxns.push({ date: dateStr, type: 'expense', category: 'Bailout', description: 'Unpaid tax added to bailout debt', amount: totalDue - canPay });
-        }
+        if (next.balance !== Infinity) next.balance -= totalDue;
+        dayTxns.push({ date: dateStr, type: 'expense', category: 'Tax Penalty', description: `Late tax payment + ${TAX_LATE_PENALTY * 100}% penalty`, amount: totalDue });
         bk.taxDue = 0;
         bk.taxPaidThisYear = true;
       }
@@ -488,28 +483,24 @@ export default function Dashboard({ initialState, onQuit, onGameOver }: Dashboar
       const updatedCampaigns = (mkt.campaigns || []).map((c) => {
         if (!c.active) return c;
         const cost = c.dailyCost;
-        if (next.balance >= cost || next.balance === Infinity) {
-          if (next.balance !== Infinity) next.balance -= cost;
-          dayTxns.push({ date: dateStr, type: 'expense', category: 'Marketing', description: 'Marketing campaign', amount: cost });
+        if (next.balance !== Infinity) next.balance -= cost;
+        dayTxns.push({ date: dateStr, type: 'expense', category: 'Marketing', description: 'Marketing campaign', amount: cost });
 
-          // Calculate hype generated
-          const adHype = c.adTypes.reduce((sum, adId) => {
-            const ad = AD_TYPES.find((a) => a.id === adId);
-            return sum + (ad?.hypeMultiplier ?? 0);
-          }, 0);
-          const regionHype = c.regions.reduce((sum, rId) => {
-            const r = CONTINENTS.find((ct) => ct.id === rId);
-            return sum + (r?.marketSize ?? 0);
-          }, 0);
-          // Hype gain scales with budget, diminishing returns above 50, with daily jitter
-          const jitter = 0.6 + Math.random() * 0.8; // ±40% variance
-          const baseHypeGain = (cost / 1000) * adHype * regionHype * 0.15 * jitter;
-          const diminishing = hype > 50 ? 50 / hype : 1;
-          hype = Math.min(100, hype + baseHypeGain * diminishing);
-          return c;
-        }
-        // Can't afford — auto-stop campaign
-        return { ...c, active: false };
+        // Calculate hype generated
+        const adHype = c.adTypes.reduce((sum, adId) => {
+          const ad = AD_TYPES.find((a) => a.id === adId);
+          return sum + (ad?.hypeMultiplier ?? 0);
+        }, 0);
+        const regionHype = c.regions.reduce((sum, rId) => {
+          const r = CONTINENTS.find((ct) => ct.id === rId);
+          return sum + (r?.marketSize ?? 0);
+        }, 0);
+        // Hype gain scales with budget, diminishing returns above 50, with daily jitter
+        const jitter = 0.6 + Math.random() * 0.8; // ±40% variance
+        const baseHypeGain = (cost / 1000) * adHype * regionHype * 0.15 * jitter;
+        const diminishing = hype > 50 ? 50 / hype : 1;
+        hype = Math.min(100, hype + baseHypeGain * diminishing);
+        return c;
       });
       mkt.campaigns = updatedCampaigns;
 
@@ -551,7 +542,6 @@ export default function Dashboard({ initialState, onQuit, onGameOver }: Dashboar
         next.marketing = mkt;
       }
       // If a new product just started selling, discontinue old selling products
-      let dailySalesTotal = 0;
       const products = productsPass1.map((p) => {
         if (p.status === 'selling') {
           if (newProductFinished && !p.sellStartDate?.startsWith(next.gameDate.slice(0, 10))) {
@@ -589,9 +579,9 @@ export default function Dashboard({ initialState, onQuit, onGameOver }: Dashboar
           const hypeMult = 1 + hypeRatio * 4 + Math.pow(hypeRatio, 2) * 3;
           // Competition multiplier: more competitors = harder to sell
           const compState = prev.competitorState || DEFAULT_COMPETITOR_STATE;
-          const activeCompetitors = compState.activeProducts.length;
-          const competitionMult = activeCompetitors > 0 ? Math.max(0.45, 1 - activeCompetitors * 0.045) : 1;
-          const baseMarketDemand = 850;
+          const competitorPower = compState.activeProducts.reduce((sum, cp) => sum + cp.salesPower, 0);
+          const competitionMult = competitorPower > 0 ? Math.max(0.18, 1 / (1 + competitorPower / 2200)) : 1;
+          const baseMarketDemand = 650;
           const hardwareDemand = p.performance * 2 + p.build * 1.1 + 60;
           const launchMomentum = days <= 30 ? 1.35 : days <= 90 ? 1.15 : 1;
           const peakSales = (baseMarketDemand + hardwareDemand) * demandMult * valueMult * overpricePenalty * hypeMult * competitionMult * launchMomentum;
@@ -606,10 +596,14 @@ export default function Dashboard({ initialState, onQuit, onGameOver }: Dashboar
             return { ...p, status: 'discontinued' as const, daysOnSale: days, salesBoost: boost, previousPrice: p.price };
           }
           const dailyRevenue = dailySales * p.price;
-          if (next.balance !== Infinity) next.balance += dailyRevenue;
+          const manufacturingCost = Math.round(dailySales * p.unitCost * 100) / 100;
+          const dailyProfit = dailyRevenue - manufacturingCost;
+          if (next.balance !== Infinity) next.balance += dailyProfit;
           bk.yearlyIncome += dailyRevenue;
-          dailySalesTotal += dailyRevenue;
           dayTxns.push({ date: dateStr, type: 'income', category: 'CPU Sales', description: `${p.brand ? p.brand + ' ' : ''}${p.name} (${dailySales} units)`, amount: dailyRevenue });
+          if (manufacturingCost > 0) {
+            dayTxns.push({ date: dateStr, type: 'expense', category: 'Manufacturing', description: `${p.brand ? p.brand + ' ' : ''}${p.name} (${dailySales} units)`, amount: manufacturingCost });
+          }
 
           const history = [...(p.salesHistory || []), dailySales];
           if (history.length > 90) history.shift();
@@ -673,7 +667,7 @@ export default function Dashboard({ initialState, onQuit, onGameOver }: Dashboar
               coreId: cpu.coreId,
               techProcessId: cpu.techProcessId,
               releaseDate: next.gameDate,
-              salesPower: 100 + stats.performance * 2 + (cpu.price > 200 ? 30 : 0),
+              salesPower: getCompetitorBaseSalesPower({ ...stats, price: cpu.price }),
             };
 
             // Remove older products from the same company (keep max 2)
@@ -702,12 +696,12 @@ export default function Dashboard({ initialState, onQuit, onGameOver }: Dashboar
             const daysSinceRelease = Math.floor(
               (new Date(next.gameDate).getTime() - new Date(p.releaseDate).getTime()) / 86400000
             );
-            // Decay: strong for 90 days, then drops off
-            const decayFactor = 1 / (1 + Math.pow(daysSinceRelease / 120, 2));
-            const basePower = 100 + p.performance * 2 + (p.price > 200 ? 30 : 0);
-            return { ...p, salesPower: Math.max(5, basePower * decayFactor) };
+            // Competitor products stay relevant long enough to pressure the market.
+            const decayFactor = 1 / (1 + Math.pow(daysSinceRelease / 260, 1.6));
+            const basePower = getCompetitorBaseSalesPower(p);
+            return { ...p, salesPower: Math.max(50, basePower * decayFactor) };
           })
-          .filter(p => p.salesPower > 3); // Remove very old products
+          .filter(p => p.salesPower > 25); // Remove very old products
 
         // Accumulate daily competitor revenue and update valuations
         const revenues: Record<string, number> = { ...(compState.companyRevenues || {}) };
@@ -716,10 +710,11 @@ export default function Dashboard({ initialState, onQuit, onGameOver }: Dashboar
           const compProducts = compState.activeProducts.filter(p => p.companyId === compId);
           // Estimate daily revenue from salesPower * price
           for (const cp of compProducts) {
-            const dailySales = Math.floor(cp.salesPower * 0.3);
+            const dailySales = Math.floor(cp.salesPower * COMPETITOR_DAILY_SALES_MULTIPLIER);
             revenues[compId] = (revenues[compId] || 0) + dailySales * cp.price;
           }
-          valuations[compId] = Math.round(revenues[compId] || 0);
+          const productStrength = compProducts.reduce((sum, cp) => sum + cp.salesPower * cp.price * 45, 0);
+          valuations[compId] = Math.round(COMPETITOR_BASE_VALUATION + (revenues[compId] || 0) * COMPETITOR_VALUATION_MULTIPLIER + productStrength);
         }
         compState.companyRevenues = revenues;
         compState.companyValuations = valuations;
@@ -946,9 +941,6 @@ export default function Dashboard({ initialState, onQuit, onGameOver }: Dashboar
 
       const q = prev.research.researchQueue || [];
 
-      // Can't afford
-      if (prev.balance < item.cost && prev.balance !== Infinity) return prev;
-
       // If no current research, start it immediately
       if (!prev.research.currentResearch) {
         const dateStr = prev.gameDate.slice(0, 10);
@@ -1029,11 +1021,14 @@ export default function Dashboard({ initialState, onQuit, onGameOver }: Dashboar
   };
 
   const handleBudgetChange = (budget: number) => {
+    const currentYear = new Date(gameState.gameDate).getFullYear();
+    const maxBudget = getMaxResearchBudget(currentYear);
+    const clampedBudget = Math.max(0, Math.min(maxBudget, budget));
     setGameState((prev) => ({
       ...prev,
       research: {
         ...prev.research,
-        dailyBudget: budget,
+        dailyBudget: clampedBudget,
       },
     }));
   };
@@ -1086,7 +1081,6 @@ export default function Dashboard({ initialState, onQuit, onGameOver }: Dashboar
 
   const handlePayTax = () => {
     setGameState((prev) => {
-      if (prev.balance < prev.bank.taxDue) return prev;
       const dateStr = prev.gameDate.slice(0, 10);
       const txn: Transaction = { date: dateStr, type: 'expense', category: 'Tax', description: `Manual tax payment`, amount: prev.bank.taxDue };
       return {
@@ -1100,7 +1094,7 @@ export default function Dashboard({ initialState, onQuit, onGameOver }: Dashboar
 
   const handleRepayBailout = (amount: number) => {
     setGameState((prev) => {
-      const repay = Math.min(amount, prev.bank.bailoutOwed, prev.balance);
+      const repay = Math.min(amount, prev.bank.bailoutOwed);
       return {
         ...prev,
         balance: prev.balance - repay,

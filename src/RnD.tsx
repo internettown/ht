@@ -16,6 +16,7 @@ import type { GameState } from './types';
 import {
   CPU_RESEARCH,
   TECH_RESEARCH,
+  getMaxResearchBudget,
   rpPerDay,
   type ResearchItem,
 } from './rndData';
@@ -442,6 +443,7 @@ export default function RnD({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const { research } = gameState;
   const currentYear = new Date(gameState.gameDate).getFullYear();
+  const maxBudget = getMaxResearchBudget(currentYear);
 
   const currentResearchItem = research.currentResearch
     ? [...CPU_RESEARCH, ...TECH_RESEARCH].find((r) => r.id === research.currentResearch)
@@ -524,20 +526,20 @@ export default function RnD({
                 <BudgetSliderWrap>
                   <Slider
                     min={0}
-                    max={800}
-                    step={25}
-                    value={research.dailyBudget}
+                    max={maxBudget}
+                    step={maxBudget > 5_000 ? 250 : 25}
+                    value={Math.min(research.dailyBudget, maxBudget)}
                     onChange={(value: number) => onBudgetChange(value)}
                     marks={[
                       { value: 0, label: '' },
-                      { value: 200, label: '' },
-                      { value: 400, label: '' },
-                      { value: 600, label: '' },
-                      { value: 800, label: '' },
+                      { value: Math.round(maxBudget * 0.25), label: '' },
+                      { value: Math.round(maxBudget * 0.5), label: '' },
+                      { value: Math.round(maxBudget * 0.75), label: '' },
+                      { value: maxBudget, label: '' },
                     ]}
                   />
                 </BudgetSliderWrap>
-                <BudgetLabel>$800</BudgetLabel>
+                <BudgetLabel>${maxBudget.toLocaleString()}</BudgetLabel>
               </BudgetSliderRow>
               <BudgetValueBox>
                 <BudgetValueLabel>Daily cost</BudgetValueLabel>

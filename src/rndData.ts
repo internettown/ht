@@ -149,6 +149,14 @@ export function getNextUnlocks(
   });
 }
 
+export const MAX_RESEARCH_BUDGET = 20_000;
+
+export function getMaxResearchBudget(currentYear: number): number {
+  if (currentYear <= 1970) return 800;
+  const yearsElapsed = Math.max(0, currentYear - 1970);
+  return Math.min(MAX_RESEARCH_BUDGET, 800 + yearsElapsed * 500);
+}
+
 // RP/day formula: $175/day = 1 RP/day, $500/day = 2.27 RP/day (from wiki)
 export function rpPerDay(budget: number): number {
   if (budget <= 0) return 0;

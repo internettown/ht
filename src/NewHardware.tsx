@@ -387,17 +387,11 @@ export default function NewHardware({ gameState, onClose, onAddBrand, onStartPro
         <DesignFooter>
           <Button onClick={() => setStep('select-process')}>Back</Button>
           <FooterRight>
-            {designResult && gameState.balance < designResult.designCost && (
-              <CostWarning $canAfford={false}>
-                Insufficient funds
-              </CostWarning>
-            )}
             <Button
               primary
               disabled={
                 !designResult ||
-                !cpuName.trim() ||
-                gameState.balance < (designResult?.designCost ?? Infinity)
+                !cpuName.trim()
               }
               style={{ fontWeight: 700, fontSize: 14, padding: '8px 24px' }}
               onClick={() => {
@@ -761,12 +755,6 @@ const FooterRight = styled.div`
   display: flex;
   align-items: center;
   gap: 12px;
-`;
-
-const CostWarning = styled.span<{ $canAfford: boolean }>`
-  font-size: 12px;
-  font-weight: 700;
-  color: ${(p) => (p.$canAfford ? '#006400' : '#cc0000')};
 `;
 
 const PackageSelectedName = styled.span`
