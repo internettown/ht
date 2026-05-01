@@ -4,10 +4,10 @@ import type { GameState } from './types';
 import { COMPETITOR_COMPANIES } from './competitorData';
 import { formatClock } from './cpuData';
 
-const PLAYER_MARKET_POWER_MULTIPLIER = 0.08;
+const PLAYER_MARKET_POWER_MULTIPLIER = 0.22;
 const PLAYER_BASE_PRODUCT_POWER = 25;
-const COMPETITOR_MARKET_POWER_MULTIPLIER = 14;
-const COMPETITOR_BASE_PRODUCT_POWER = 350;
+const COMPETITOR_MARKET_POWER_MULTIPLIER = 1.8;
+const COMPETITOR_BASE_PRODUCT_POWER = 90;
 
 interface MarketProps {
   gameState: GameState;
@@ -68,6 +68,7 @@ function PieChart({ slices }: { slices: MarketSlice[] }) {
 export default function Market({ gameState, onClose }: MarketProps) {
   const cs = gameState.competitorState;
   const sellingProducts = gameState.products.filter(p => p.status === 'selling');
+  const hasPlayerProducts = sellingProducts.length > 0;
 
   // Calculate market shares
   const entries: { id: string; companyId: string; name: string; cpuName: string; salesPower: number; isPlayer: boolean; color: string; price: number; clockKHz: number; performance: number }[] = [];
@@ -102,7 +103,11 @@ export default function Market({ gameState, onClose }: MarketProps) {
       companyId: p.companyId,
       name: p.companyName,
       cpuName: p.name,
-      salesPower: COMPETITOR_BASE_PRODUCT_POWER + p.salesPower * COMPETITOR_MARKET_POWER_MULTIPLIER + p.performance * 18,
+      salesPower: (
+        COMPETITOR_BASE_PRODUCT_POWER +
+        p.salesPower * COMPETITOR_MARKET_POWER_MULTIPLIER +
+        p.performance * 4
+      ) * (hasPlayerProducts ? 1 : 0.35),
       isPlayer: false,
       color: comp?.color || '#888',
       price: p.price,

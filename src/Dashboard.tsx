@@ -274,10 +274,10 @@ const DEFAULT_RESEARCH = {
   cpuExperience: 0,
 };
 
-const COMPETITOR_SALES_POWER_MULTIPLIER = 18;
-const COMPETITOR_DAILY_SALES_MULTIPLIER = 4;
-const COMPETITOR_VALUATION_MULTIPLIER = 26;
-const COMPETITOR_BASE_VALUATION = 25_000_000;
+const COMPETITOR_SALES_POWER_MULTIPLIER = 4.5;
+const COMPETITOR_DAILY_SALES_MULTIPLIER = 1.6;
+const COMPETITOR_VALUATION_MULTIPLIER = 10;
+const COMPETITOR_BASE_VALUATION = 1_250_000;
 
 function getCompetitorBaseSalesPower(product: Pick<CompetitorProduct, 'performance' | 'build' | 'stability' | 'price'>): number {
   const qualityPower = product.performance * 3 + product.build * 2 + Math.max(0, product.stability) * 1.5;
