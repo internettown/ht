@@ -274,10 +274,10 @@ const DEFAULT_RESEARCH = {
   cpuExperience: 0,
 };
 
-const COMPETITOR_SALES_POWER_MULTIPLIER = 3.5;
-const COMPETITOR_DAILY_SALES_MULTIPLIER = 1.25;
-const COMPETITOR_VALUATION_MULTIPLIER = 12;
-const COMPETITOR_BASE_VALUATION = 750_000;
+const COMPETITOR_SALES_POWER_MULTIPLIER = 18;
+const COMPETITOR_DAILY_SALES_MULTIPLIER = 4;
+const COMPETITOR_VALUATION_MULTIPLIER = 26;
+const COMPETITOR_BASE_VALUATION = 25_000_000;
 
 function getCompetitorBaseSalesPower(product: Pick<CompetitorProduct, 'performance' | 'build' | 'stability' | 'price'>): number {
   const qualityPower = product.performance * 3 + product.build * 2 + Math.max(0, product.stability) * 1.5;
@@ -580,8 +580,8 @@ export default function Dashboard({ initialState, onQuit, onGameOver }: Dashboar
           // Competition multiplier: more competitors = harder to sell
           const compState = prev.competitorState || DEFAULT_COMPETITOR_STATE;
           const competitorPower = compState.activeProducts.reduce((sum, cp) => sum + cp.salesPower, 0);
-          const competitionMult = competitorPower > 0 ? Math.max(0.18, 1 / (1 + competitorPower / 2200)) : 1;
-          const baseMarketDemand = 650;
+          const competitionMult = competitorPower > 0 ? Math.max(0.05, 1 / (1 + competitorPower / 450)) : 1;
+          const baseMarketDemand = 520;
           const hardwareDemand = p.performance * 2 + p.build * 1.1 + 60;
           const launchMomentum = days <= 30 ? 1.35 : days <= 90 ? 1.15 : 1;
           const peakSales = (baseMarketDemand + hardwareDemand) * demandMult * valueMult * overpricePenalty * hypeMult * competitionMult * launchMomentum;
@@ -670,9 +670,9 @@ export default function Dashboard({ initialState, onQuit, onGameOver }: Dashboar
               salesPower: getCompetitorBaseSalesPower({ ...stats, price: cpu.price }),
             };
 
-            // Remove older products from the same company (keep max 2)
+            // Remove older products from the same company (keep max 4)
             const companyProducts = compState.activeProducts.filter(p => p.companyId === cpu.companyId);
-            if (companyProducts.length >= 2) {
+            if (companyProducts.length >= 4) {
               const oldest = companyProducts.sort((a, b) => a.salesPower - b.salesPower)[0];
               compState.activeProducts = compState.activeProducts.filter(p => p.id !== oldest.id);
             }

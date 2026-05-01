@@ -4,6 +4,11 @@ import type { GameState } from './types';
 import { COMPETITOR_COMPANIES } from './competitorData';
 import { formatClock } from './cpuData';
 
+const PLAYER_MARKET_POWER_MULTIPLIER = 0.08;
+const PLAYER_BASE_PRODUCT_POWER = 25;
+const COMPETITOR_MARKET_POWER_MULTIPLIER = 14;
+const COMPETITOR_BASE_PRODUCT_POWER = 350;
+
 interface MarketProps {
   gameState: GameState;
   onClose: () => void;
@@ -71,12 +76,16 @@ export default function Market({ gameState, onClose }: MarketProps) {
   for (const p of sellingProducts) {
     const history = p.salesHistory || [];
     const recentSales = history.slice(-7).reduce((s, v) => s + v, 0);
+    const valuePenalty = p.price > p.unitCost * 2.5 ? 0.7 : 1;
     entries.push({
       id: p.id,
       companyId: 'player',
       name: gameState.companyName,
       cpuName: (p.brand ? p.brand + ' ' : '') + p.name,
-      salesPower: recentSales + 10,
+      salesPower: Math.max(
+        PLAYER_BASE_PRODUCT_POWER,
+        (recentSales * PLAYER_MARKET_POWER_MULTIPLIER + p.performance * 0.8 + p.build * 0.4) * valuePenalty,
+      ),
       isPlayer: true,
       color: '#FFD700',
       price: p.price,
@@ -93,7 +102,7 @@ export default function Market({ gameState, onClose }: MarketProps) {
       companyId: p.companyId,
       name: p.companyName,
       cpuName: p.name,
-      salesPower: p.salesPower,
+      salesPower: COMPETITOR_BASE_PRODUCT_POWER + p.salesPower * COMPETITOR_MARKET_POWER_MULTIPLIER + p.performance * 18,
       isPlayer: false,
       color: comp?.color || '#888',
       price: p.price,

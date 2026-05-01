@@ -3,6 +3,26 @@ import { Window, WindowHeader, WindowContent } from 'react95';
 import type { GameState } from './types';
 import { COMPETITOR_COMPANIES, generateCompanyLogoSvg } from './competitorData';
 
+const COMPETITOR_REPUTATION: Record<string, number> = {
+  inlet: 1.35,
+  imd: 1.25,
+  iam: 1.18,
+  nic: 1.08,
+  morotola: 1.05,
+  fastchild: 0.98,
+  sekkusu: 0.92,
+  element: 0.88,
+  zelog: 0.82,
+  toshina: 0.72,
+};
+
+function getEraValuationFloor(compId: string, currentYear: number): number {
+  const yearsElapsed = Math.max(0, currentYear - 1970);
+  const eraScale = Math.pow(yearsElapsed + 1, 2.15);
+  const reputation = COMPETITOR_REPUTATION[compId] || 0.85;
+  return Math.round(7_500_000 * eraScale * reputation);
+}
+
 interface CompaniesProps {
   gameState: GameState;
   onClose: () => void;
@@ -26,10 +46,14 @@ function formatValuation(v: number): string {
 
 export default function Companies({ gameState, onClose }: CompaniesProps) {
   const cs = gameState.competitorState;
+  const currentYear = new Date(gameState.gameDate).getFullYear();
   const companies: CompanyEntry[] = [];
 
-  // Player company valuation = total revenue
-  const playerValuation = gameState.products.reduce((s, p) => s + p.totalRevenue, 0);
+  // Player company valuation emphasizes durable profit instead of raw lifetime revenue.
+  const playerValuation = gameState.products.reduce((s, p) => {
+    const productProfit = p.totalRevenue - p.designCost - p.totalUnitsSold * p.unitCost;
+    return s + Math.max(0, productProfit);
+  }, Math.max(0, gameState.balance === Infinity ? 0 : gameState.balance));
   companies.push({
     id: 'player',
     name: gameState.companyName,
@@ -44,10 +68,18 @@ export default function Companies({ gameState, onClose }: CompaniesProps) {
   for (const compId of cs.knownCompanies) {
     const comp = COMPETITOR_COMPANIES.find(c => c.id === compId);
     if (!comp) continue;
-    const valuation = cs.companyValuations[compId] || 0;
+    const activeProducts = cs.activeProducts.filter(p => p.companyId === compId);
+    const activeProductValue = activeProducts.reduce(
+      (sum, p) => sum + p.salesPower * Math.max(75, p.price) * 450,
+      0,
+    );
+    const valuation = Math.max(
+      cs.companyValuations[compId] || 0,
+      getEraValuationFloor(compId, currentYear) + activeProductValue,
+    );
     // Count all released CPUs for this company
     const totalProducts = cs.releasedCPUIds.length > 0
-      ? cs.activeProducts.filter(p => p.companyId === compId).length
+      ? activeProducts.length
       : 0;
 
     companies.push({
