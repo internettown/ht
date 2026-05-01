@@ -274,10 +274,10 @@ const DEFAULT_RESEARCH = {
   cpuExperience: 0,
 };
 
-const COMPETITOR_SALES_POWER_MULTIPLIER = 4.5;
-const COMPETITOR_DAILY_SALES_MULTIPLIER = 1.6;
-const COMPETITOR_VALUATION_MULTIPLIER = 10;
-const COMPETITOR_BASE_VALUATION = 1_250_000;
+const COMPETITOR_SALES_POWER_MULTIPLIER = 1.8;
+const COMPETITOR_DAILY_SALES_MULTIPLIER = 0.7;
+const COMPETITOR_VALUATION_MULTIPLIER = 4;
+const COMPETITOR_BASE_VALUATION = 250_000;
 
 function getCompetitorBaseSalesPower(product: Pick<CompetitorProduct, 'performance' | 'build' | 'stability' | 'price'>): number {
   const qualityPower = product.performance * 3 + product.build * 2 + Math.max(0, product.stability) * 1.5;
@@ -580,8 +580,8 @@ export default function Dashboard({ initialState, onQuit, onGameOver }: Dashboar
           // Competition multiplier: more competitors = harder to sell
           const compState = prev.competitorState || DEFAULT_COMPETITOR_STATE;
           const competitorPower = compState.activeProducts.reduce((sum, cp) => sum + cp.salesPower, 0);
-          const competitionMult = competitorPower > 0 ? Math.max(0.05, 1 / (1 + competitorPower / 450)) : 1;
-          const baseMarketDemand = 520;
+          const competitionMult = competitorPower > 0 ? Math.max(0.25, 1 / (1 + competitorPower / 1800)) : 1;
+          const baseMarketDemand = 700;
           const hardwareDemand = p.performance * 2 + p.build * 1.1 + 60;
           const launchMomentum = days <= 30 ? 1.35 : days <= 90 ? 1.15 : 1;
           const peakSales = (baseMarketDemand + hardwareDemand) * demandMult * valueMult * overpricePenalty * hypeMult * competitionMult * launchMomentum;

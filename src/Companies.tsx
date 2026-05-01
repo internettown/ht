@@ -18,9 +18,9 @@ const COMPETITOR_REPUTATION: Record<string, number> = {
 
 function getEraValuationFloor(compId: string, currentYear: number): number {
   const yearsElapsed = Math.max(0, currentYear - 1970);
-  const eraScale = Math.pow(yearsElapsed + 1, 1.6);
+  const eraScale = Math.pow(yearsElapsed + 1, 1.25);
   const reputation = COMPETITOR_REPUTATION[compId] || 0.85;
-  return Math.round(250_000 * eraScale * reputation);
+  return Math.round(45_000 * eraScale * reputation);
 }
 
 interface CompaniesProps {
@@ -70,7 +70,7 @@ export default function Companies({ gameState, onClose }: CompaniesProps) {
     if (!comp) continue;
     const activeProducts = cs.activeProducts.filter(p => p.companyId === compId);
     const activeProductValue = activeProducts.reduce(
-      (sum, p) => sum + p.salesPower * Math.max(75, p.price) * 16,
+      (sum, p) => sum + p.salesPower * Math.max(75, p.price) * 2.5,
       0,
     );
     const valuation = Math.max(

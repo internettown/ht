@@ -4,10 +4,10 @@ import type { GameState } from './types';
 import { COMPETITOR_COMPANIES } from './competitorData';
 import { formatClock } from './cpuData';
 
-const PLAYER_MARKET_POWER_MULTIPLIER = 0.22;
-const PLAYER_BASE_PRODUCT_POWER = 25;
-const COMPETITOR_MARKET_POWER_MULTIPLIER = 1.8;
-const COMPETITOR_BASE_PRODUCT_POWER = 90;
+const PLAYER_MARKET_POWER_MULTIPLIER = 0.65;
+const PLAYER_BASE_PRODUCT_POWER = 140;
+const COMPETITOR_MARKET_POWER_MULTIPLIER = 0.38;
+const COMPETITOR_BASE_PRODUCT_POWER = 28;
 
 interface MarketProps {
   gameState: GameState;
@@ -107,7 +107,7 @@ export default function Market({ gameState, onClose }: MarketProps) {
         COMPETITOR_BASE_PRODUCT_POWER +
         p.salesPower * COMPETITOR_MARKET_POWER_MULTIPLIER +
         p.performance * 4
-      ) * (hasPlayerProducts ? 1 : 0.35),
+      ) * (hasPlayerProducts ? 1 : 0.08),
       isPlayer: false,
       color: comp?.color || '#888',
       price: p.price,
