@@ -274,15 +274,19 @@ const DEFAULT_RESEARCH = {
   cpuExperience: 0,
 };
 
-const COMPETITOR_SALES_POWER_MULTIPLIER = 1.8;
-const COMPETITOR_DAILY_SALES_MULTIPLIER = 0.7;
-const COMPETITOR_VALUATION_MULTIPLIER = 4;
+const COMPETITOR_SALES_POWER_MULTIPLIER = 1.25;
+const COMPETITOR_DAILY_SALES_MULTIPLIER = 0.35;
+const COMPETITOR_REVENUE_VALUATION_SCALE = 1400;
 const COMPETITOR_BASE_VALUATION = 250_000;
 
 function getCompetitorBaseSalesPower(product: Pick<CompetitorProduct, 'performance' | 'build' | 'stability' | 'price'>): number {
   const qualityPower = product.performance * 3 + product.build * 2 + Math.max(0, product.stability) * 1.5;
   const premiumPower = product.price > 200 ? 90 : product.price > 120 ? 45 : 0;
   return (220 + qualityPower + premiumPower) * COMPETITOR_SALES_POWER_MULTIPLIER;
+}
+
+function getCompetitorRevenueValuation(revenue: number): number {
+  return Math.sqrt(Math.max(0, revenue)) * COMPETITOR_REVENUE_VALUATION_SCALE;
 }
 
 function migrateState(state: GameState): GameState {
@@ -714,7 +718,7 @@ export default function Dashboard({ initialState, onQuit, onGameOver }: Dashboar
             revenues[compId] = (revenues[compId] || 0) + dailySales * cp.price;
           }
           const productStrength = compProducts.reduce((sum, cp) => sum + cp.salesPower * cp.price * 45, 0);
-          valuations[compId] = Math.round(COMPETITOR_BASE_VALUATION + (revenues[compId] || 0) * COMPETITOR_VALUATION_MULTIPLIER + productStrength);
+          valuations[compId] = Math.round(COMPETITOR_BASE_VALUATION + getCompetitorRevenueValuation(revenues[compId] || 0) + productStrength);
         }
         compState.companyRevenues = revenues;
         compState.companyValuations = valuations;
